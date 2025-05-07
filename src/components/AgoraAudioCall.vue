@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1>Agora Audio Call</h1>
+    <h1>Debattle Game 1. THBT Sarmad must pay the promised amount to Abubakr !</h1>
     <div class="controls">
       <button @click="joinChannel" :disabled="isJoined">Join Channel</button>
       <button @click="leaveChannel" :disabled="!isJoined">Leave Channel</button>
