@@ -1,10 +1,10 @@
 <template>
   <div class="container">
-    <h1>Debattle Game 1. THBT Sarmad must pay the promised amount to Abubakr !</h1>
+    <h1 style="font-weight: bold; margin-bottom: 25px;">Debattle Game 1. THBT Sarmad must pay the promised amount to Abubakr !</h1>
     <div class="controls">
-      <button @click="joinChannel" :disabled="isJoined">Join Channel</button>
-      <button @click="leaveChannel" :disabled="!isJoined">Leave Channel</button>
-      <button @click="toggleMic" :disabled="!isJoined">
+      <button style="background: green; border-radius: 45px; color: white; padding: 20px;font-size: 30px;" @click="joinChannel" :disabled="isJoined">Join Channel</button>
+      <button style="background: indianred; padding: 20px; color: white; border-radius: 45px; font-size: 30px;" @click="leaveChannel" :disabled="!isJoined">Leave Channel</button>
+      <button style="background: royalblue; padding: 20px; color: white; border-radius: 45px; font-size: 30px;" @click="toggleMic" :disabled="!isJoined">
         {{ isMuted ? "Unmute Mic" : "Mute Mic" }}
       </button>
     </div>
