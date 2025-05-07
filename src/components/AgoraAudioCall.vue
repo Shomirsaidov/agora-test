@@ -19,65 +19,71 @@
 
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, markRaw } from 'vue'
 import AgoraRTC from 'agora-rtc-sdk-ng'
 
+// All Agora objects are marked non-reactive
 const client = ref(null)
 const localAudioTrack = ref(null)
 const isJoined = ref(false)
+const activeSubscriptions = new Set() // Tracks ongoing subscriptions
+
 const APP_ID = '9ad089e29213419cb055404480669436'
 const CHANNEL = 'bismillah'
 
 const joinChannel = async () => {
   try {
-    // 1. Initialize client with minimal configuration
-    client.value = AgoraRTC.createClient({
+    // 1. Initialize NON-REACTIVE client
+    client.value = markRaw(AgoraRTC.createClient({
       mode: 'rtc',
       codec: 'vp8'
-    })
+    }))
 
-    // 2. Set up event listeners first
+    // 2. Setup listeners
     setupEventListeners()
 
-    // 3. Join channel without token
+    // 3. Join channel
     await client.value.join(APP_ID, CHANNEL, null, null)
 
-    // 4. Create and publish local track
-    localAudioTrack.value = await AgoraRTC.createMicrophoneAudioTrack()
+    // 4. Create NON-REACTIVE audio track
+    const track = await AgoraRTC.createMicrophoneAudioTrack()
+    localAudioTrack.value = markRaw(track)
     await client.value.publish(localAudioTrack.value)
     
     isJoined.value = true
-    console.log('Successfully joined channel')
   } catch (error) {
     console.error('Join failed:', error)
   }
 }
 
 const setupEventListeners = () => {
-  // Handle remote user subscription with stability checks
   client.value.on('user-published', async (user, mediaType) => {
-    if (mediaType !== 'audio') return
+    if (mediaType !== 'audio' || activeSubscriptions.has(user.uid)) return
+    
+    activeSubscriptions.add(user.uid)
     
     try {
-      // Verify user is still in channel
+      // Stability delay
       await new Promise(resolve => setTimeout(resolve, 300))
       
-      const userStillExists = client.value.remoteUsers.some(u => u.uid === user.uid)
-      if (!userStillExists) {
-        console.warn('User left before subscription')
-        return
+      // Verify user presence
+      if (!client.value.remoteUsers.some(u => u.uid === user.uid)) {
+        throw new Error('User left before subscription')
       }
 
-      await client.value.subscribe(user, 'audio')
+      // Subscribe to NON-REACTIVE user object
+      await client.value.subscribe(markRaw(user), 'audio')
       user.audioTrack.play()
     } catch (err) {
-      console.log('Subscribe error (non-critical):', err)
+      console.warn('Subscription skipped:', err)
+    } finally {
+      activeSubscriptions.delete(user.uid)
     }
   })
 
   // Monitor connection state
   client.value.on('connection-state-change', (state) => {
-    console.log('Connection state changed:', state)
+    console.log('Connection state:', state)
   })
 }
 
@@ -89,6 +95,7 @@ const leaveChannel = async () => {
     }
     await client.value.leave()
     isJoined.value = false
+    activeSubscriptions.clear()
   } catch (error) {
     console.error('Leave error:', error)
   }
